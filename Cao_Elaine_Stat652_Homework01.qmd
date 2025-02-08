@@ -1,0 +1,109 @@
+---
+title: "Cao_Elaine_Stat652_Homework01"
+author: "Elaine Cao"
+format: html
+editor: visual
+---
+
+**Instructions:** Answer all questions in the space below the \# headers.
+
+# 9.9 Exercises, Problem 2
+
+Calculate and interpret a 95% confidence interval for the mean age of mothers from the *Gestation* data set from the *mosaicData* package.
+
+### **Answer:**
+
+Per the R codes below, we are 95% confident that the mean age of mothers from the Gestation data set from mosaicData package is between 26.932 and 27.578 years old.
+
+### **Code and Comments:**
+
+```{r}
+library(mosaic)
+
+Gestation %>% select(age) %>%
+  t.test()
+```
+
+# 9.9 Exercises, Problem 3
+
+Use the bootstrap to generate and interpret a 95% confidence interval for the median age of mothers for the *Gestation* data set from the *mosaicData* package.
+
+### **Answer:**
+
+Under the use of bootstrap, we are 95% confident that the median age of mothers for the Gestation data set from the mosaicData package is between 25.652 and 27.975 years old.
+
+### **Code and Comments:**
+
+```{r}
+library(pacman)
+library(infer)
+
+n <- 200
+num_trial <- 600
+
+# Bootstrap: sampling with replacement
+main_sample <- Gestation |>
+  slice_sample(n = n, replace = FALSE)
+main_sample
+
+# Get the sample of median age
+main_sample |>
+  slice_sample(n = n, replace = TRUE) |>
+  summarize(median_age = median(age))
+
+
+bs_mdage_200 <- main_sample |>
+  infer::rep_slice_sample(n = n, replace = TRUE, reps = num_trial) |>
+  summarize(median_age = median(age)) |>
+  mutate(n = n)
+
+bs_mdage_200 |>
+  summarize(
+    x_bar = mean(median_age),
+    se = sd(median_age)
+  ) |>
+  mutate(
+    lower_bound = x_bar - 2 * se, 
+    upper_bound = x_bar + 2 * se
+  ) 
+# approximately 95% of data are within 2 standard errors
+
+```
+
+# 9.10 Supplemental exerises, Problem 2a
+
+Consider the results from the model of *Dist* as a function of *Cond* (first model). Briefly summarize what this model says about the relationship between the wind conditions and the distance traveled by the ball. Make sure to say something sensible about the strength of evidence that there is any relationship at all.
+
+### **Answer:**
+
+The first model explores the relationship between Dist (distance in feet of the flight of the ball) and Cond (the wind condition which contains Headwind and Tailwind).
+
+For Condtail, the p-value is 0.0833 which is greater than the common significant level, 0.05. Therefore, we can not reject the null hypothesis that there is no linear relationship between Dist and CondTail.
+
+In addition, the 95% confidence interval is (-0.81784, 12.54766), which include the zero. Considering the big p-value and zero in the 95% confidence interval, we can conclude there is weak evidence that the Tailwind significantly affects the distance of the ball.
+
+### **Code and Comments:**
+
+```{r}
+# N/A. Codes are already given by textbook. 
+```
+
+# 9.10 Supplemental exerises, Problem 2b
+
+Briefly summarize the model that has *Dist* as the response variable and includes the other variables as explanatory variables (second model) by reporting and interpreting the *CondTail* parameter. This second model suggests a somewhat different result for the relationship between *Dist* and *Cond*. Summarize the differences and explain in statistical terms why the inclusion of the other explanatory variables has affected the results.
+
+### **Answer:**
+
+From the second model, there exists different results because of the change of variables.
+
+First of all, the p-value is smaller. The p-value for CondTail in the first model is 0.0833 but in the second model is 0.00418, which is small than any common significant level. This provides strong evidence that Tailwind significantly affect the distance of the ball if we treat other variables as constants.
+
+Secondarily, the 95% confidence interval for CondTail in the first model is (-0.81784, 12.54766) but in the second model is (2.6328174, 12.708166), which doesn't include the zero. This provides another evidence that Tailwind's impact on the distance of the ball is statistically significant.
+
+The inclusion of the other explanatory variables can reduce the residual error. Looking at the p-value for Velocity and BallDis, we can indicate that these 2 variables can significantly affect the distance. Therefore, putting the other explanatory variables as constants can better reveal the Tailwind's strong effect on distance.
+
+### **Code and Comments:**
+
+```{r}
+# N/A. Given by the textbook.
+```
