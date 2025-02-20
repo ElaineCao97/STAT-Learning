@@ -173,7 +173,11 @@ First separate the NHANES data set uniformly at random into 75% training and 25%
 
 ### **Answer:**
 
-Summarize your answer to the question here.  All code and comments should be below and your written answer above.
+- See the following codes and output for the Null model.
+- Effectiveness: The null model is not very useful because it doesn't consider other variables that may impact Sleep trouble. 
+- See the following Bar Plot for Visualization for Null model. 
+- The null model predicts that each participant has the same probabilty, which is 26.2%, to have sleep trouble. People's sleeping habit can't be predicted from this model because null model doesn't consider other factors. 
+
 
 ### **Code and Comments:**
 
@@ -184,6 +188,9 @@ library(pacman)
 library(dplyr)
 head(NHANES)
 
+# Drop 'ID' column
+NHANES <- NHANES |> select(-ID)
+
 # explore the missing values
 skim(NHANES)
 
@@ -191,12 +198,11 @@ NHANES |> select(SleepTrouble) |>
   group_by (SleepTrouble) |> 
   summarize(n = n()) 
 
-
 # Remove rows where 'SleepTrouble' or 'Poverty' is NA
 nhanes_new <- NHANES |>
   drop_na(SleepTrouble, Poverty)
 
-# Split the data to train data and test data
+# Split the data to train data (75%) and test data (25%)
 set.seed(364)
 n <- nrow(nhanes_new)
 nhanes_part <- nhanes_new |> initial_split(prop = 0.75)
@@ -205,19 +211,44 @@ train <- nhanes_part |> training()
 test <- nhanes_part |> testing()
 list(train, test) |> map_int(nrow)
 
+# Compute the observed % of people with SleepTrouble in the training set as pi_bar
+
+pi_bar <- train |>
+  count(SleepTrouble) |>
+  mutate(pct = n / sum(n)) |>
+  filter(SleepTrouble == "Yes") |>
+  pull(pct)
+pi_bar
+
 # Build Null model
 nhanes_null <- logistic_reg(mode = "classification") |>
   set_engine("glm") |>
   fit(SleepTrouble ~1, data = train)
 nhanes_null
 
+# Extract the proportion of SleepTrouble from training data
+sleep_port <- train |> count(SleepTrouble) |> mutate(pct = n / sum(n))
+
+# Visualize the Null model (Bar Plot)
+library(ggplot2)
+
+ggplot(sleep_port, aes(x = SleepTrouble, y = pct, fill = SleepTrouble)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Proportion of Sleep Trouble in Training Data",
+       y = "Proportion",
+       x = "Sleep Trouble") +
+  theme_minimal()
 ```
+
 
 # Model 2: Logistic Regression
 
 ### **Answer:**
 
-Summarize your answer to the question here.  All code and comments should be below and your written answer above.
+- See below for the Logistic regression classifier.
+- Effectiveness: It works better than the null model because it consider other variable than the response variable. 
+- See below code and output for the visualization: Logistic Regression curve.
+- Interpret the results: Since the coefficient for Poverty is negative, that means when the Poverty level is increasing, having Sleep Trouble becomes less likely. 
 
 ### **Code and Comments:**
 
@@ -228,13 +259,27 @@ nhanes_logmod <- logistic_reg(mode = "classification") |>
   fit(SleepTrouble ~ Poverty, data = train)
 nhanes_logmod
 
+# Add predicted probabilities to training data in a new column
+train_pred <- train |> 
+  mutate(pred_prob = predict(nhanes_logmod, new_data = train, 
+                        type = "prob")$.pred_Yes)
+
+# Visualization: Plot the logistic regression curve
+ggplot(train_pred, aes(x = Poverty, y = pred_prob)) +
+  geom_point(alpha = 0.1, shape = 17, size = 2, color = "blue") + 
+  labs(title = "Visualization for Logistic Regression",
+       x = "Poverty",
+       y = "Predicted Probability of Sleep Trouble") 
+
+
 ```
+
 
 # Model 7: kNN
 
 ### **Answer:**
 
-Summarize your answer to the question here.  All code and comments should be below and your written answer above.
+
 
 ### **Code and Comments:**
 
@@ -246,9 +291,9 @@ library(kknn)
 # Distance 
 train_q <- train |> select(SleepTrouble, where(is.numeric))
 head(train_q)
-nhanes_modknn <- nearest_neighbor(neighbors = 5, mode = "classification") |>
+nhanes_knn <- nearest_neighbor(neighbors = 5, mode = "classification") |>
   set_engine("kknn", scale = TRUE) |>
-  fit(SleepTrouble ~ Poverty, data = train_q)
-nhanes_modknn
+  fit(SleepTrouble ~ ., data = train_q)
+nhanes_knn
 ```
 
